@@ -152,28 +152,39 @@ with f_col2:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- GAME COLUMNS GRID ---
+# --- GAME COLUMNS GRID (MOBILE RESPONSIVE) ---
 num_slots = st.session_state.num_blocks + 1
-grid_left, grid_mid, grid_right = st.columns([3, 1, 3])
 
-with grid_left:
-    st.markdown("<h4 style='text-align: center; color:#2980B9;'>LEFT SIDE</h4>", unsafe_allow_html=True)
-    act1, act2 = st.columns(2)
-    act1.button("🔼 To Free", on_click=move_left_to_free, use_container_width=True)
-    act2.button("➡️ To Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True)
-    
-    for s_idx in range(num_slots - 1, -1, -1):
+# This helper draws a clean mobile-friendly row containing Left, Label, and Right for that slot level
+def render_slot_row(s_idx):
+    # Creating 3 tight columns for the blocks so they fit on narrow touchscreens
+    col_l, col_m, col_r = st.columns([4, 2, 4])
+    with col_l:
         st.markdown(render_block_html(st.session_state.left_side[s_idx]), unsafe_allow_html=True)
-
-with grid_mid:
-    st.markdown("<h4 style='text-align: center; color:#BDC3C7;'>SLOT</h4>", unsafe_allow_html=True)
-    st.write("##") # spacing alignment
-    for s_idx in range(num_slots - 1, -1, -1):
+    with col_m:
         st.markdown(f"<div style='height:48px; display:flex; align-items:center; justify-content:center; color:#BDC3C7; font-weight:bold; margin:4px 0; font-family:sans-serif;'>#{s_idx}</div>", unsafe_allow_html=True)
-
-with grid_right:
-    st.markdown("<h4 style='text-align: center; color:#E67E22;'>RIGHT SIDE</h4>", unsafe_allow_html=True)
-    st.button("⬅️ To Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True)
-    
-    for s_idx in range(num_slots - 1, -1, -1):
+    with col_r:
         st.markdown(render_block_html(st.session_state.right_side[s_idx]), unsafe_allow_html=True)
+
+# 1. Action Buttons Control Panel (Stacked cleanly for thumbs)
+st.markdown("### 🎮 Controls")
+btn_col1, btn_col2, btn_col3 = st.columns(3)
+with btn_col1:
+    st.button("🔼 Left To Free", on_click=move_left_to_free, use_container_width=True)
+with btn_col2:
+    st.button("➡️ Left To Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True)
+with btn_col3:
+    st.button("⬅️ Right To Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True)
+
+st.markdown("---")
+
+# 2. Unified Game Board Grid
+# Displays column headers tightly
+hdr_l, hdr_m, hdr_r = st.columns([4, 2, 4])
+hdr_l.markdown("<h5 style='text-align: center; color:#2980B9; margin:0;'>LEFT</h5>", unsafe_allow_html=True)
+hdr_m.markdown("<h5 style='text-align: center; color:#BDC3C7; margin:0;'>SLOT</h5>", unsafe_allow_html=True)
+hdr_r.markdown("<h5 style='text-align: center; color:#E67E22; margin:0;'>RIGHT</h5>", unsafe_allow_html=True)
+
+# Render the physical grid slots dynamically compressed
+for s_idx in range(num_slots - 1, -1, -1):
+    render_slot_row(s_idx)
