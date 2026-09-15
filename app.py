@@ -458,12 +458,14 @@ def render_block_html(block_idx):
 def render_empty_free_slot():
     return '<div class="block-empty-free">Empty</div>'
 
-# --- USER INTERFACE DESIGN ---
+# ====================================================================
+# --- USER INTERFACE DESIGN (REPLACE EVERYTHING FROM HERE DOWN) ---
+# ====================================================================
 st.title("Cuby Puzzle 🧩")
 
-# Clean configurations row
 st.markdown("### Puzzle Configurations")
 col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
+
 with col_ctrl1:
     new_blocks = st.slider(
         "Choose Number of Blocks:", 
@@ -477,18 +479,19 @@ with col_ctrl1:
         st.rerun()
 
 with col_ctrl2:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True) # structural spacer
     if st.button("🔄 Reset Board", use_container_width=True):
         initialize_game()
         st.rerun()
+
 with col_ctrl3:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True) # structural spacer
     has_history = len(st.session_state.move_history) > 0
     if st.button("↶ Undo Move", disabled=not has_history, use_container_width=True):
         undo_move()
         st.rerun()
 
-# Dynamic exponential warnings
+# Dynamic exponential warnings for deep boards
 if st.session_state.num_blocks >= 8:
     st.warning(f"💡 High difficulty active! An optimal solution for {st.session_state.num_blocks} blocks requires at least {2**(st.session_state.num_blocks+1) - st.session_state.num_blocks - 2} perfect moves.")
 
@@ -504,13 +507,13 @@ st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_seco
 html("""
 <script>
 const doc = window.parent.document;
-doc.addEventListener('keydown', function(e) {
+doc.parentKeydownListener = doc.parentKeydownListener || function(e) {
     const key = e.key.toLowerCase();
     let btnLabel = "";
-    if (key === 'w') btnLabel = "🔼 Free (W)";
-    if (key === 'd') btnLabel = "➡️ Right (D)";
-    if (key === 'a') btnLabel = "⬅️ Left (A)";
-    if (key === 's') btnLabel = "🔽 Drop (S)";
+    if (key === 'w') btnLabel = "🔼 Free";
+    if (key === 'd') btnLabel = "➡️ Right";
+    if (key === 'a') btnLabel = "⬅️ Left";
+    if (key === 's') btnLabel = "🔽 Drop";
     
     if (btnLabel) {
         const buttons = Array.from(doc.querySelectorAll('button'));
@@ -519,12 +522,14 @@ doc.addEventListener('keydown', function(e) {
             targetBtn.click();
         }
     }
-});
+};
+doc.removeEventListener('keydown', doc.parentKeydownListener);
+doc.addEventListener('keydown', doc.parentKeydownListener);
 </script>
 """, height=0)
 
 # --- 1. ACTION CONTROLS PANEL ---
-st.markdown(f"<div class='action-buttons'><h6 style='margin:0;'>🎮 Action Controls (Click or tap W, A, S, D)</h6></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='action-buttons'><h6 style='margin:0;'>🎮 Action Controls (Keyboard: W, A, S, D)</h6></div>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 with btn_col1:
     st.button("🔼 Free (W)", on_click=move_left_to_free, use_container_width=True)
