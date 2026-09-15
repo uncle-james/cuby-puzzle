@@ -1,9 +1,10 @@
 import streamlit as st
 from collections import deque
+import copy
+from streamlit.components.v1 import html
 
 # --- CONFIGURATION & CONSTANTS ---
 CONFIG = {
-    "BLOCK_HEIGHT": 30,
     "BLOCK_MARGIN": "2px 0",
     "BORDER_RADIUS": "4px",
     "SHADOW": "0px 2px 4px rgba(0,0,0,0.1)",
@@ -35,12 +36,28 @@ CONFIG = {
 # --- STREAMLIT CONFIGURATION & PERSISTENT STATE ---
 st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="wide")
 
-def inject_styles():
-    """Inject all CSS styles at once for better maintainability."""
+if "num_blocks" not in st.session_state:
+    st.session_state.num_blocks = 6
+
+if "move_history" not in st.session_state:
+    st.session_state.move_history = deque(maxlen=50)
+
+if "move_count" not in st.session_state:
+    st.session_state.move_count = 0
+
+# --- DYNAMIC GRID SCALING CALCULATOR ---
+current_n = st.session_state.num_blocks
+if current_n <= 4:
+    computed_height = 42
+elif current_n <= 7:
+    computed_height = 32
+else:
+    computed_height = 24
+
+def inject_styles(block_height):
+    """Inject all CSS styles dynamically using the explicitly passed block height."""
     st.markdown(f"""
         <style>
-        /* REMOVED the broken data-testid column property that was collapsing the width */
-        
         .block-container {{
             height: {block_height}px;
             display: flex;
@@ -104,16 +121,8 @@ def inject_styles():
         </style>
     """, unsafe_allow_html=True)
 
-inject_styles()
-
-if "num_blocks" not in st.session_state:
-    st.session_state.num_blocks = 6
-
-if "move_history" not in st.session_state:
-    st.session_state.move_history = deque(maxlen=50)
-
-if "move_count" not in st.session_state:
-    st.session_state.move_count = 0
+# Explicitly pass the calculated value into the function
+inject_styles(computed_height)
 
 def initialize_game():
     N = st.session_state.num_blocks
