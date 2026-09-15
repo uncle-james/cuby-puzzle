@@ -298,7 +298,7 @@ num_slots = st.session_state.num_blocks + 1
 hdr_l, hdr_m, hdr_r = st.columns([3, 1, 3])
 hdr_l.markdown(f"<div class='header header-left'>LEFT</div>", unsafe_allow_html=True)
 hdr_m.markdown(f"<div class='header header-center'>SLOT</div>", unsafe_allow_html=True)
-hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_have_html=True)
+hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_allow_html=True)
 
 # Render compact side-by-side rows
 for s_idx in range(num_slots - 1, -1, -1):
