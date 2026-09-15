@@ -102,20 +102,6 @@ def inject_styles():
         .action-buttons {{
             margin-top: 55px !important;
         }}
-        .move-history {{
-            background-color: rgba(49, 51, 63, 0.5);
-            border-radius: 4px;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 11px;
-            color: {CONFIG['COLORS']['text_secondary']};
-            max-height: 120px;
-            overflow-y: auto;
-        }}
-        .move-history-item {{
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(189, 195, 199, 0.2);
-        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -297,15 +283,6 @@ with btn_col3:
     st.button("⬅️ Left (A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Move top block from Right to Left")
 with btn_col4:
     st.button("🔽 Drop (S)", on_click=drop_free_to_left, use_container_width=True, help="Drop free block to Left side")
-
-# --- MOVE HISTORY LOG ---
-if len(st.session_state.move_history) > 0:
-    st.markdown("<div style='text-align: center; font-size:11px; color:#BDC3C7; font-weight:bold; margin-top:15px;'>📋 Move History</div>", unsafe_allow_html=True)
-    history_html = '<div class="move-history">'
-    for i, move in enumerate(reversed(list(st.session_state.move_history)), 1):
-        history_html += f'<div class="move-history-item">{i}. {move["description"]}</div>'
-    history_html += '</div>'
-    st.markdown(history_html, unsafe_allow_html=True)
 
 # --- 2. FREE SLOT DISPLAY ---
 st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
