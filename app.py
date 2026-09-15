@@ -33,7 +33,7 @@ CONFIG = {
 }
 
 # --- STREAMLIT CONFIGURATION & PERSISTENT STATE ---
-st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="centered")
+st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="wide")
 
 def inject_styles():
     """Inject all CSS styles at once for better maintainability."""
@@ -272,15 +272,15 @@ st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_seco
 
 # --- 1. ACTION CONTROLS PANEL ---
 st.markdown(f"<h6 style='margin:0;'>🎮 Action Controls</h6>", unsafe_allow_html=True)
-btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 1.2])
+btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 with btn_col1:
-    st.button("🔼 Free", on_click=move_left_to_free, use_container_width=True, help="Left to Free (W)")
+    st.button("🔼 Free (W)", on_click=move_left_to_free, use_container_width=True, help="Move top block from Left to Free slot")
 with btn_col2:
-    st.button("➡️ Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Left to Right (D)")
+    st.button("➡️ Right (D)", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Move top block from Left to Right")
 with btn_col3:
-    st.button("⬅️ Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Right to Left (A)")
+    st.button("⬅️ Left (A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Move top block from Right to Left")
 with btn_col4:
-    st.button("🔽 Drop", on_click=drop_free_to_left, use_container_width=True, help="Drop Free to Left (S)")
+    st.button("🔽 Drop (S)", on_click=drop_free_to_left, use_container_width=True, help="Drop free block to Left side")
 
 # --- 2. FREE SLOT DISPLAY ---
 st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
@@ -298,7 +298,7 @@ num_slots = st.session_state.num_blocks + 1
 hdr_l, hdr_m, hdr_r = st.columns([3, 1, 3])
 hdr_l.markdown(f"<div class='header header-left'>LEFT</div>", unsafe_allow_html=True)
 hdr_m.markdown(f"<div class='header header-center'>SLOT</div>", unsafe_allow_html=True)
-hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_allow_html=True)
+hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_have_html=True)
 
 # Render compact side-by-side rows
 for s_idx in range(num_slots - 1, -1, -1):
