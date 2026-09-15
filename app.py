@@ -24,8 +24,8 @@ CONFIG = {
         {"name": "Turquoise Blue",  "hex": "#77DDE7", "dark_text": True},
         {"name": "Teal Blue",       "hex": "#008080", "dark_text": False},
         {"name": "Green",           "hex": "#1CAC78", "dark_text": False},
-        {"name": "Yellow Green",    "hex": "#9FD356", "dark_text": True},  # Adjusted for better contrast
-        {"name": "Golden Yellow",   "hex": "#FFD700", "dark_text": True},  # Adjusted for better contrast
+        {"name": "Yellow Green",    "hex": "#9FD356", "dark_text": True},
+        {"name": "Golden Yellow",   "hex": "#FFD700", "dark_text": True},
         {"name": "Orange",          "hex": "#FF7538", "dark_text": False},
         {"name": "Scarlet",         "hex": "#FC2847", "dark_text": False},
         {"name": "Red",             "hex": "#EE204D", "dark_text": False}
@@ -100,7 +100,21 @@ def inject_styles():
             color: {CONFIG['COLORS']['text_secondary']};
         }}
         .action-buttons {{
-            margin-top: 40px !important;
+            margin-top: 55px !important;
+        }}
+        .move-history {{
+            background-color: rgba(49, 51, 63, 0.5);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 11px;
+            color: {CONFIG['COLORS']['text_secondary']};
+            max-height: 120px;
+            overflow-y: auto;
+        }}
+        .move-history-item {{
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(189, 195, 199, 0.2);
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -254,7 +268,6 @@ st.title("Cuby Puzzle 🧩")
 col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
 with col_ctrl1:
     new_blocks = st.slider("Blocks:", min_value=2, max_value=12, value=st.session_state.num_blocks, label_visibility="collapsed")
-    # Validate block change - reinitialize game if changed
     if new_blocks != st.session_state.num_blocks:
         st.session_state.num_blocks = new_blocks
         initialize_game()
@@ -284,6 +297,15 @@ with btn_col3:
     st.button("⬅️ Left (A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Move top block from Right to Left")
 with btn_col4:
     st.button("🔽 Drop (S)", on_click=drop_free_to_left, use_container_width=True, help="Drop free block to Left side")
+
+# --- MOVE HISTORY LOG ---
+if len(st.session_state.move_history) > 0:
+    st.markdown("<div style='text-align: center; font-size:11px; color:#BDC3C7; font-weight:bold; margin-top:15px;'>📋 Move History</div>", unsafe_allow_html=True)
+    history_html = '<div class="move-history">'
+    for i, move in enumerate(reversed(list(st.session_state.move_history)), 1):
+        history_html += f'<div class="move-history-item">{i}. {move["description"]}</div>'
+    history_html += '</div>'
+    st.markdown(history_html, unsafe_allow_html=True)
 
 # --- 2. FREE SLOT DISPLAY ---
 st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
