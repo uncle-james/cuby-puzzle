@@ -99,14 +99,8 @@ def inject_styles():
             text-align: center;
             color: {CONFIG['COLORS']['text_secondary']};
         }}
-        /* Fix for button height and text visibility */
-        button[kind="primary"] {{
-            height: auto !important;
-            min-height: 60px !important;
-            white-space: normal !important;
-            word-wrap: break-word !important;
-            overflow: visible !important;
-            line-height: 1.5 !important;
+        .action-buttons {{
+            margin-top: 40px !important;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -280,16 +274,16 @@ if st.session_state.game_won:
 st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_secondary']}; font-size:12px;'>Moves: <strong>{st.session_state.move_count}</strong></div>", unsafe_allow_html=True)
 
 # --- 1. ACTION CONTROLS PANEL ---
-st.markdown(f"<h6 style='margin:0;'>🎮 Action Controls</h6>", unsafe_allow_html=True)
+st.markdown(f"<div class='action-buttons'><h6 style='margin:0;'>🎮 Action Controls</h6></div>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 with btn_col1:
-    st.button("🔼\nFree\n(W)", on_click=move_left_to_free, use_container_width=True, help="Move top block from Left to Free slot")
+    st.button("🔼 Free (W)", on_click=move_left_to_free, use_container_width=True, help="Move top block from Left to Free slot")
 with btn_col2:
-    st.button("➡️\nRight\n(D)", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Move top block from Left to Right")
+    st.button("➡️ Right (D)", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Move top block from Left to Right")
 with btn_col3:
-    st.button("⬅️\nLeft\n(A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Move top block from Right to Left")
+    st.button("⬅️ Left (A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Move top block from Right to Left")
 with btn_col4:
-    st.button("🔽\nDrop\n(S)", on_click=drop_free_to_left, use_container_width=True, help="Drop free block to Left side")
+    st.button("🔽 Drop (S)", on_click=drop_free_to_left, use_container_width=True, help="Drop free block to Left side")
 
 # --- 2. FREE SLOT DISPLAY ---
 st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
