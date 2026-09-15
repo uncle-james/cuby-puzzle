@@ -39,11 +39,10 @@ def inject_styles():
     """Inject all CSS styles at once for better maintainability."""
     st.markdown(f"""
         <style>
-        [data-testid="column"] {{
-            min-width: 0px !important;
-        }}
+        /* REMOVED the broken data-testid column property that was collapsing the width */
+        
         .block-container {{
-            height: {CONFIG['BLOCK_HEIGHT']}px;
+            height: {block_height}px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -55,14 +54,14 @@ def inject_styles():
             font-family: sans-serif;
         }}
         .block-empty {{
-            height: {CONFIG['BLOCK_HEIGHT']}px;
+            height: {block_height}px;
             border: 1px dashed {CONFIG['COLORS']['border_dashed']};
             background-color: {CONFIG['COLORS']['bg_dark']};
             border-radius: {CONFIG['BORDER_RADIUS']};
             margin: {CONFIG['BLOCK_MARGIN']};
         }}
         .block-empty-free {{
-            height: {CONFIG['BLOCK_HEIGHT']}px;
+            height: {block_height}px;
             border: 1px dashed {CONFIG['COLORS']['border_dashed']};
             display: flex;
             align-items: center;
@@ -74,7 +73,7 @@ def inject_styles():
             margin: {CONFIG['BLOCK_MARGIN']};
         }}
         .slot-label {{
-            height: {CONFIG['BLOCK_HEIGHT']}px;
+            height: {block_height}px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -100,7 +99,7 @@ def inject_styles():
             color: {CONFIG['COLORS']['text_secondary']};
         }}
         .action-buttons {{
-            margin-top: 55px !important;
+            margin-top: 25px !important;
         }}
         </style>
     """, unsafe_allow_html=True)
