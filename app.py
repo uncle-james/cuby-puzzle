@@ -459,39 +459,39 @@ def render_empty_free_slot():
     return '<div class="block-empty-free">Empty</div>'
 
 # ====================================================================
-# --- USER INTERFACE DESIGN (REPLACE EVERYTHING FROM HERE DOWN) ---
+# --- USER INTERFACE DESIGN ---
 # ====================================================================
 st.title("Cuby Puzzle 🧩")
 
-st.markdown("### Puzzle Configurations")
-col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
+# Wrap the controls inside an explicit border container to bypass collapse bugs
+with st.container(border=True):
+    st.write("### ⚙️ Game Configurations")
+    col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
+    
+    with col_ctrl1:
+        new_blocks = st.slider(
+            "Number of Blocks:", 
+            min_value=2, 
+            max_value=12, 
+            value=st.session_state.num_blocks
+        )
+        if new_blocks != st.session_state.num_blocks:
+            st.session_state.num_blocks = new_blocks
+            initialize_game()
+            st.rerun()
 
-with col_ctrl1:
-    new_blocks = st.slider(
-        "Choose Number of Blocks:", 
-        min_value=2, 
-        max_value=12, 
-        value=st.session_state.num_blocks
-    )
-    if new_blocks != st.session_state.num_blocks:
-        st.session_state.num_blocks = new_blocks
-        initialize_game()
-        st.rerun()
+    with col_ctrl2:
+        if st.button("🔄 Reset Board", use_container_width=True):
+            initialize_game()
+            st.rerun()
 
-with col_ctrl2:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True) # structural spacer
-    if st.button("🔄 Reset Board", use_container_width=True):
-        initialize_game()
-        st.rerun()
+    with col_ctrl3:
+        has_history = len(st.session_state.move_history) > 0
+        if st.button("↶ Undo Move", disabled=not has_history, use_container_width=True):
+            undo_move()
+            st.rerun()
 
-with col_ctrl3:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True) # structural spacer
-    has_history = len(st.session_state.move_history) > 0
-    if st.button("↶ Undo Move", disabled=not has_history, use_container_width=True):
-        undo_move()
-        st.rerun()
-
-# Dynamic exponential warnings for deep boards
+# Dynamic exponential difficulty warnings
 if st.session_state.num_blocks >= 8:
     st.warning(f"💡 High difficulty active! An optimal solution for {st.session_state.num_blocks} blocks requires at least {2**(st.session_state.num_blocks+1) - st.session_state.num_blocks - 2} perfect moves.")
 
@@ -530,7 +530,7 @@ doc.addEventListener('keydown', doc.parentKeydownListener);
 
 # --- 1. ACTION CONTROLS PANEL ---
 st.markdown(f"<div class='action-buttons'><h6 style='margin:0;'>🎮 Action Controls (Keyboard: W, A, S, D)</h6></div>", unsafe_allow_html=True)
-btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
+btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 1])
 with btn_col1:
     st.button("🔼 Free (W)", on_click=move_left_to_free, use_container_width=True)
 with btn_col2:
@@ -542,7 +542,7 @@ with btn_col4:
 
 # --- 2. FREE SLOT DISPLAY ---
 st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold; margin-top:15px;'>FREE SLOT</div>", unsafe_allow_html=True)
-_, f_mid, _ = st.columns(3)
+_, f_mid, _ = st.columns([1, 2, 1])
 with f_mid:
     if st.session_state.free_slot is not None:
         st.markdown(render_block_html(st.session_state.free_slot), unsafe_allow_html=True)
@@ -553,14 +553,14 @@ with f_mid:
 num_slots = st.session_state.num_blocks + 1
 
 # Column headers
-hdr_l, hdr_m, hdr_r = st.columns(3)
+hdr_l, hdr_m, hdr_r = st.columns([3, 1, 3])
 hdr_l.markdown(f"<div class='header header-left'>LEFT</div>", unsafe_allow_html=True)
 hdr_m.markdown(f"<div class='header header-center'>SLOT</div>", unsafe_allow_html=True)
 hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_allow_html=True)
 
 # Render compact side-by-side rows
 for s_idx in range(num_slots - 1, -1, -1):
-    col_l, col_m, col_r = st.columns(3)
+    col_l, col_m, col_r = st.columns([3, 1, 3])
     with col_l:
         st.markdown(render_block_html(st.session_state.left_side[s_idx]), unsafe_allow_html=True)
     with col_m:
