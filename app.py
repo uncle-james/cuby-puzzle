@@ -1,34 +1,22 @@
 import streamlit as st
+from collections import deque
 
-# --- STREAMLIT CONFIGURATION & PERSISTENT STATE ---
-st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="centered")
-
-# Custom CSS to force columns to stay side-by-side even on narrow portrait mobile screens
-st.markdown("""
-    <style>
-    [data-testid="column"] {
-        min-width: 0px !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-if "num_blocks" not in st.session_state:
-    st.session_state.num_blocks = 6
-
-def initialize_game():
-    N = st.session_state.num_blocks
-    slots = N + 1
-    st.session_state.left_side = {i: i if i < N else None for i in range(slots)}
-    st.session_state.right_side = {i: None for i in range(slots)}
-    st.session_state.free_slot = None
-    st.session_state.game_won = False
-
-if "left_side" not in st.session_state:
-    initialize_game()
-
-# --- THEME GENERATION ---
-def get_block_theme(block_idx, num_blocks):
-    crayola_box = [
+# --- CONFIGURATION & CONSTANTS ---
+CONFIG = {
+    "BLOCK_HEIGHT": 30,
+    "BLOCK_MARGIN": "2px 0",
+    "BORDER_RADIUS": "4px",
+    "SHADOW": "0px 2px 4px rgba(0,0,0,0.1)",
+    "FONT_SIZE_BLOCK": "12px",
+    "FONT_SIZE_LABEL": "11px",
+    "COLORS": {
+        "border_dashed": "#95A5A6",
+        "bg_dark": "#1E293B",
+        "text_secondary": "#BDC3C7",
+        "header_left": "#2980B9",
+        "header_right": "#E67E22",
+    },
+    "CRAYOLA_COLORS": [
         {"name": "Violet",          "hex": "#7851A9", "dark_text": False},
         {"name": "Plum",            "hex": "#8E4585", "dark_text": False},
         {"name": "Indigo",          "hex": "#4B0082", "dark_text": False},
@@ -36,18 +24,117 @@ def get_block_theme(block_idx, num_blocks):
         {"name": "Turquoise Blue",  "hex": "#77DDE7", "dark_text": True},
         {"name": "Teal Blue",       "hex": "#008080", "dark_text": False},
         {"name": "Green",           "hex": "#1CAC78", "dark_text": False},
-        {"name": "Yellow Green",    "hex": "#C5E384", "dark_text": True},
-        {"name": "Yellow",          "hex": "#FCE883", "dark_text": True},
+        {"name": "Yellow Green",    "hex": "#9FD356", "dark_text": True},  # Adjusted for better contrast
+        {"name": "Golden Yellow",   "hex": "#FFD700", "dark_text": True},  # Adjusted for better contrast
         {"name": "Orange",          "hex": "#FF7538", "dark_text": False},
         {"name": "Scarlet",         "hex": "#FC2847", "dark_text": False},
         {"name": "Red",             "hex": "#EE204D", "dark_text": False}
-    ]
+    ],
+}
+
+# --- STREAMLIT CONFIGURATION & PERSISTENT STATE ---
+st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="centered")
+
+def inject_styles():
+    """Inject all CSS styles at once for better maintainability."""
+    st.markdown(f"""
+        <style>
+        [data-testid="column"] {{
+            min-width: 0px !important;
+        }}
+        .block-container {{
+            height: {CONFIG['BLOCK_HEIGHT']}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: {CONFIG['FONT_SIZE_BLOCK']};
+            border-radius: {CONFIG['BORDER_RADIUS']};
+            box-shadow: {CONFIG['SHADOW']};
+            margin: {CONFIG['BLOCK_MARGIN']};
+            font-family: sans-serif;
+        }}
+        .block-empty {{
+            height: {CONFIG['BLOCK_HEIGHT']}px;
+            border: 1px dashed {CONFIG['COLORS']['border_dashed']};
+            background-color: {CONFIG['COLORS']['bg_dark']};
+            border-radius: {CONFIG['BORDER_RADIUS']};
+            margin: {CONFIG['BLOCK_MARGIN']};
+        }}
+        .block-empty-free {{
+            height: {CONFIG['BLOCK_HEIGHT']}px;
+            border: 1px dashed {CONFIG['COLORS']['border_dashed']};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: {CONFIG['COLORS']['border_dashed']};
+            font-size: {CONFIG['FONT_SIZE_LABEL']};
+            font-style: italic;
+            border-radius: {CONFIG['BORDER_RADIUS']};
+            margin: {CONFIG['BLOCK_MARGIN']};
+        }}
+        .slot-label {{
+            height: {CONFIG['BLOCK_HEIGHT']}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: {CONFIG['COLORS']['text_secondary']};
+            font-weight: bold;
+            font-size: {CONFIG['FONT_SIZE_LABEL']};
+            font-family: sans-serif;
+        }}
+        .header {{
+            font-weight: bold;
+            font-size: {CONFIG['FONT_SIZE_BLOCK']};
+        }}
+        .header-left {{
+            text-align: center;
+            color: {CONFIG['COLORS']['header_left']};
+        }}
+        .header-right {{
+            text-align: center;
+            color: {CONFIG['COLORS']['header_right']};
+        }}
+        .header-center {{
+            text-align: center;
+            color: {CONFIG['COLORS']['text_secondary']};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+inject_styles()
+
+if "num_blocks" not in st.session_state:
+    st.session_state.num_blocks = 6
+
+if "move_history" not in st.session_state:
+    st.session_state.move_history = deque(maxlen=50)
+
+if "move_count" not in st.session_state:
+    st.session_state.move_count = 0
+
+def initialize_game():
+    N = st.session_state.num_blocks
+    num_slots = N + 1
+    st.session_state.left_side = {i: i if i < N else None for i in range(num_slots)}
+    st.session_state.right_side = {i: None for i in range(num_slots)}
+    st.session_state.free_slot = None
+    st.session_state.game_won = False
+    st.session_state.move_history.clear()
+    st.session_state.move_count = 0
+
+if "left_side" not in st.session_state:
+    initialize_game()
+
+# --- THEME GENERATION ---
+def get_block_theme(block_idx, num_blocks):
+    colors = CONFIG["CRAYOLA_COLORS"]
     if num_blocks > 1:
         fraction = block_idx / (num_blocks - 1)
-        idx = round(fraction * (len(crayola_box) - 1))
+        idx = round(fraction * (len(colors) - 1))
     else:
         idx = 0
-    return crayola_box[idx]
+    return colors[idx]
 
 # --- PUZZLE CORE LOGIC UTILITIES ---
 def get_top_block_info(side_dict, num_slots):
@@ -65,8 +152,31 @@ def calculate_landing_slot(block_num, side_dict, num_slots):
     return max(block_num, highest_occupied + 1)
 
 def check_win():
-    if all(st.session_state.right_side[i] == i for i in range(st.session_state.num_blocks)):
+    num_blocks = st.session_state.num_blocks
+    if all(st.session_state.right_side[i] == i for i in range(num_blocks)):
         st.session_state.game_won = True
+
+def save_move_state(description):
+    """Save game state to history for undo functionality."""
+    state = {
+        "description": description,
+        "left_side": st.session_state.left_side.copy(),
+        "right_side": st.session_state.right_side.copy(),
+        "free_slot": st.session_state.free_slot,
+    }
+    st.session_state.move_history.append(state)
+
+def undo_move():
+    """Restore the last game state."""
+    if len(st.session_state.move_history) == 0:
+        st.toast("⚠️ No moves to undo!", icon="❌")
+        return
+    state = st.session_state.move_history.pop()
+    st.session_state.left_side = state["left_side"]
+    st.session_state.right_side = state["right_side"]
+    st.session_state.free_slot = state["free_slot"]
+    st.session_state.move_count = max(0, st.session_state.move_count - 1)
+    st.session_state.game_won = False
 
 # --- ACTION LOGIC HANDLERS ---
 def move_left_to_free():
@@ -78,8 +188,10 @@ def move_left_to_free():
     if top_slot is None:
         st.toast("⚠️ Left side empty!", icon="❌")
         return
+    save_move_state("Moved block to free slot")
     st.session_state.free_slot = block_num
     st.session_state.left_side[top_slot] = None
+    st.session_state.move_count += 1
 
 def drop_free_to_left():
     num_slots = st.session_state.num_blocks + 1
@@ -90,8 +202,10 @@ def drop_free_to_left():
         st.toast(f"⚠️ Slot {num_slots - 1} blocked.", icon="❌")
         return
     landing_slot = calculate_landing_slot(st.session_state.free_slot, st.session_state.left_side, num_slots)
+    save_move_state("Dropped block to left")
     st.session_state.left_side[landing_slot] = st.session_state.free_slot
     st.session_state.free_slot = None
+    st.session_state.move_count += 1
     check_win()
 
 def move_side_to_side(from_side, to_side):
@@ -107,71 +221,84 @@ def move_side_to_side(from_side, to_side):
         st.toast(f"⚠️ {from_side} side empty!", icon="❌")
         return
     landing_slot = calculate_landing_slot(block_num, to_dict, num_slots)
+    save_move_state(f"Moved block from {from_side} to {to_side}")
     from_dict[top_slot] = None
     to_dict[landing_slot] = block_num
+    st.session_state.move_count += 1
     check_win()
 
-# --- HTML/CSS RENDER HELPER (COMPACT FOR MOBILE) ---
+# --- HTML RENDER HELPERS ---
 def render_block_html(block_idx):
+    """Render a single block using CSS classes."""
     if block_idx is None:
-        return '<div style="height:30px; border:1px dashed #95A5A6; background-color:#1E293B; border-radius:4px; margin:2px 0;"></div>'
+        return '<div class="block-empty"></div>'
     theme = get_block_theme(block_idx, st.session_state.num_blocks)
     txt_color = "black" if theme["dark_text"] else "white"
     return f"""
-    <div style="height:30px; display:flex; align-items:center; justify-content:center; 
-                background-color:{theme['hex']}; color:{txt_color}; font-weight:bold; font-size:12px;
-                border-radius:4px; box-shadow: 0px 2px 4px rgba(0,0,0,0.1); margin:2px 0; font-family:sans-serif;">
+    <div class="block-container" style="background-color:{theme['hex']}; color:{txt_color};">
         [{block_idx}] {theme['name']}
     </div>
     """
+
+def render_empty_free_slot():
+    """Render the empty free slot display."""
+    return '<div class="block-empty-free">Empty</div>'
 
 # --- USER INTERFACE DESIGN ---
 st.title("Cuby Puzzle 🧩")
 
 # Config and settings
-col_ctrl1, col_ctrl2 = st.columns([2, 1])
+col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
 with col_ctrl1:
     new_blocks = st.slider("Blocks:", min_value=2, max_value=12, value=st.session_state.num_blocks, label_visibility="collapsed")
+    # Validate block change - reinitialize game if changed
     if new_blocks != st.session_state.num_blocks:
         st.session_state.num_blocks = new_blocks
         initialize_game()
 with col_ctrl2:
     if st.button("🔄 Reset", use_container_width=True):
         initialize_game()
+with col_ctrl3:
+    if st.button("↶ Undo", use_container_width=True):
+        undo_move()
 
+# Display win condition
 if st.session_state.game_won:
     st.balloons()
-    st.success(f"🎉 Solved for {st.session_state.num_blocks} blocks!")
+    st.success(f"🎉 Solved for {st.session_state.num_blocks} blocks in {st.session_state.move_count} moves!")
+
+# Display move counter
+st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_secondary']}; font-size:12px;'>Moves: <strong>{st.session_state.move_count}</strong></div>", unsafe_allow_html=True)
 
 # --- 1. ACTION CONTROLS PANEL ---
-st.markdown("<h6 style='margin:0;'>🎮 Action Controls</h6>", unsafe_allow_html=True)
+st.markdown(f"<h6 style='margin:0;'>🎮 Action Controls</h6>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3, btn_col4 = st.columns([1, 1, 1, 1.2])
 with btn_col1:
-    st.button("🔼 Free", on_click=move_left_to_free, use_container_width=True, help="Left to Free")
+    st.button("🔼 Free", on_click=move_left_to_free, use_container_width=True, help="Left to Free (W)")
 with btn_col2:
-    st.button("➡️ Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Left to Right")
+    st.button("➡️ Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True, help="Left to Right (D)")
 with btn_col3:
-    st.button("⬅️ Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Right to Left")
+    st.button("⬅️ Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True, help="Right to Left (A)")
 with btn_col4:
-    st.button("🔽 Drop", on_click=drop_free_to_left, use_container_width=True, help="Drop Free to Left")
+    st.button("🔽 Drop", on_click=drop_free_to_left, use_container_width=True, help="Drop Free to Left (S)")
 
 # --- 2. FREE SLOT DISPLAY ---
-st.markdown("<div style='text-align: center; font-size:11px; color:#BDC3C7; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold;'>FREE SLOT</div>", unsafe_allow_html=True)
 _, f_mid, _ = st.columns([1, 2, 1])
 with f_mid:
     if st.session_state.free_slot is not None:
         st.markdown(render_block_html(st.session_state.free_slot), unsafe_allow_html=True)
     else:
-        st.markdown('<div style="height:30px; border:1px dashed #95A5A6; display:flex; align-items:center; justify-content:center; color:#95A5A6; font-size:11px; font-style:italic; border-radius:4px; font-family:sans-serif; margin-bottom:10px;">- Empty -</div>', unsafe_allow_html=True)
+        st.markdown(render_empty_free_slot(), unsafe_allow_html=True)
 
 # --- 3. UNIFIED GAME BOARD GRID ---
 num_slots = st.session_state.num_blocks + 1
 
 # Column headers
 hdr_l, hdr_m, hdr_r = st.columns([3, 1, 3])
-hdr_l.markdown("<div style='text-align: center; color:#2980B9; font-weight:bold; font-size:12px;'>LEFT</div>", unsafe_allow_html=True)
-hdr_m.markdown("<div style='text-align: center; color:#BDC3C7; font-weight:bold; font-size:12px;'>SLOT</div>", unsafe_allow_html=True)
-hdr_r.markdown("<div style='text-align: center; color:#E67E22; font-weight:bold; font-size:12px;'>RIGHT</div>", unsafe_allow_html=True)
+hdr_l.markdown(f"<div class='header header-left'>LEFT</div>", unsafe_allow_html=True)
+hdr_m.markdown(f"<div class='header header-center'>SLOT</div>", unsafe_allow_html=True)
+hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_allow_html=True)
 
 # Render compact side-by-side rows
 for s_idx in range(num_slots - 1, -1, -1):
@@ -179,6 +306,6 @@ for s_idx in range(num_slots - 1, -1, -1):
     with col_l:
         st.markdown(render_block_html(st.session_state.left_side[s_idx]), unsafe_allow_html=True)
     with col_m:
-        st.markdown(f"<div style='height:30px; display:flex; align-items:center; justify-content:center; color:#BDC3C7; font-weight:bold; font-size:11px; font-family:sans-serif;'>#{s_idx}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='slot-label'>#{s_idx}</div>", unsafe_allow_html=True)
     with col_r:
         st.markdown(render_block_html(st.session_state.right_side[s_idx]), unsafe_allow_html=True)
