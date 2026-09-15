@@ -136,214 +136,6 @@ def initialize_game():
 
 if "left_side" not in st.session_state:
     initialize_game()
-
-# --- THEME GENERATION ---
-def get_block_theme(block_idx, num_blocks):
-    colors = CONFIG["CRAYOLA_COLORS"]
-    if num_blocks > 1:
-        fraction = block_idx / (num_blocks - 1)
-        idx = round(fraction * (len(colors) - 1))
-    else:
-        idx = 0
-    return colors[idx]
-
-# --- PUZZLE CORE LOGIC UTILITIES ---
-def get_top_block_info(side_dict, num_slots):
-    for slot_idx in range(num_slots - 1, -1, -1):
-        if side_dict[slot_idx] is not None:
-            return slot_idx, side_dict[slot_idx]
-    return None, None
-
-def calculate_landing_slot(block_num, side_dict, num_slots):
-    highest_occupied = -1
-    for slot_idx in range(num_slots - 1, -1, -1):
-        if side_dict[slot_idx] is not None:
-            highest_occupied = slot_idx
-            break
-    return max(block_num, highest_occupied + 1)
-
-def check_win():
-    num_blocks = st.session_state.num_blocks
-    if all(st.session_state.right_side[i] == i for i in range(num_blocks)):
-        st.session_state.game_won = True
-
-def save_move_state(description):
-    """Save game state to history for undo functionality."""
-    state = {
-        "description": description,
-        "left_side": st.session_state.left_side.copy(),
-        "right_side": st.session_state.right_side.copy(),
-        "free_slot": st.session_state.free_slot,
-    }
-    st.session_state.move_history.append(state)
-
-def undo_move():
-    """Restore the last game state."""
-    if len(st.session_state.move_history) == 0:
-        st.toast("⚠️ No moves to undo!", icon="❌")
-        return
-    state = st.session_state.move_history.pop()
-    st.session_state.left_side = state["left_side"]
-    st.session_state.right_side = state["right_side"]
-    st.session_state.free_slot = state["free_slot"]
-    st.session_state.move_count = max(0, st.session_state.move_count - 1)
-    st.session_state.game_won = False
-
-# --- ACTION LOGIC HANDLERS ---
-def move_left_to_free():
-    num_slots = st.session_state.num_blocks + 1
-    if st.session_state.free_slot is not None:
-        st.toast("⚠️ Free Slot occupied!", icon="❌")
-        return
-    top_slot, block_num = get_top_block_info(st.session_state.left_side, num_slots)
-    if top_slot is None:
-        st.toast("⚠️ Left side empty!", icon="❌")
-        return
-    save_move_state("Moved block to free slot")
-    st.session_state.free_slot = block_num
-    st.session_state.left_side[top_slot] = None
-    st.session_state.move_count += 1
-import streamlit as st
-from collections import deque
-import copy
-from streamlit.components.v1 import html
-
-# --- CONFIGURATION & CONSTANTS ---
-CONFIG = {
-    "BLOCK_MARGIN": "2px 0",
-    "BORDER_RADIUS": "4px",
-    "SHADOW": "0px 2px 4px rgba(0,0,0,0.1)",
-    "FONT_SIZE_BLOCK": "12px",
-    "FONT_SIZE_LABEL": "11px",
-    "COLORS": {
-        "border_dashed": "#95A5A6",
-        "bg_dark": "#1E293B",
-        "text_secondary": "#BDC3C7",
-        "header_left": "#2980B9",
-        "header_right": "#E67E22",
-    },
-    "CRAYOLA_COLORS": [
-        {"name": "Violet",          "hex": "#7851A9", "dark_text": False},
-        {"name": "Plum",            "hex": "#8E4585", "dark_text": False},
-        {"name": "Indigo",          "hex": "#4B0082", "dark_text": False},
-        {"name": "Blue",            "hex": "#1F75FE", "dark_text": False},
-        {"name": "Turquoise Blue",  "hex": "#77DDE7", "dark_text": True},
-        {"name": "Teal Blue",       "hex": "#008080", "dark_text": False},
-        {"name": "Green",           "hex": "#1CAC78", "dark_text": False},
-        {"name": "Yellow Green",    "hex": "#9FD356", "dark_text": True},
-        {"name": "Golden Yellow",   "hex": "#FFD700", "dark_text": True},
-        {"name": "Orange",          "hex": "#FF7538", "dark_text": False},
-        {"name": "Scarlet",         "hex": "#FC2847", "dark_text": False},
-        {"name": "Red",             "hex": "#EE204D", "dark_text": False}
-    ],
-}
-
-# --- STREAMLIT CONFIGURATION & PERSISTENT STATE ---
-st.set_page_config(page_title="Cuby Asymmetric Logic Puzzle", layout="wide")
-
-if "num_blocks" not in st.session_state:
-    st.session_state.num_blocks = 6
-
-if "move_history" not in st.session_state:
-    st.session_state.move_history = deque(maxlen=50)
-
-if "move_count" not in st.session_state:
-    st.session_state.move_count = 0
-
-# --- DYNAMIC GRID SCALING CALCULATOR ---
-# Shrink block heights dynamically as the board size grows so players don't have to scroll
-current_n = st.session_state.num_blocks
-if current_n <= 4:
-    block_height = 42
-elif current_n <= 7:
-    block_height = 32
-else:
-    block_height = 24
-
-def inject_styles():
-    """Inject all CSS styles dynamically using the computed block height."""
-    st.markdown(f"""
-        <style>
-        [data-testid="column"] {{
-            min-width: 0px !important;
-        }}
-        .block-container {{
-            height: {block_height}px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: {CONFIG['FONT_SIZE_BLOCK']};
-            border-radius: {CONFIG['BORDER_RADIUS']};
-            box-shadow: {CONFIG['SHADOW']};
-            margin: {CONFIG['BLOCK_MARGIN']};
-            font-family: sans-serif;
-        }}
-        .block-empty {{
-            height: {block_height}px;
-            border: 1px dashed {CONFIG['COLORS']['border_dashed']};
-            background-color: {CONFIG['COLORS']['bg_dark']};
-            border-radius: {CONFIG['BORDER_RADIUS']};
-            margin: {CONFIG['BLOCK_MARGIN']};
-        }}
-        .block-empty-free {{
-            height: {block_height}px;
-            border: 1px dashed {CONFIG['COLORS']['border_dashed']};
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: {CONFIG['COLORS']['border_dashed']};
-            font-size: {CONFIG['FONT_SIZE_LABEL']};
-            font-style: italic;
-            border-radius: {CONFIG['BORDER_RADIUS']};
-            margin: {CONFIG['BLOCK_MARGIN']};
-        }}
-        .slot-label {{
-            height: {block_height}px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: {CONFIG['COLORS']['text_secondary']};
-            font-weight: bold;
-            font-size: {CONFIG['FONT_SIZE_LABEL']};
-            font-family: sans-serif;
-        }}
-        .header {{
-            font-weight: bold;
-            font-size: {CONFIG['FONT_SIZE_BLOCK']};
-        }}
-        .header-left {{
-            text-align: center;
-            color: {CONFIG['COLORS']['header_left']};
-        }}
-        .header-right {{
-            text-align: center;
-            color: {CONFIG['COLORS']['header_right']};
-        }}
-        .header-center {{
-            text-align: center;
-            color: {CONFIG['COLORS']['text_secondary']};
-        }}
-        .action-buttons {{
-            margin-top: 25px !important;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-
-inject_styles()
-
-def initialize_game():
-    N = st.session_state.num_blocks
-    num_slots = N + 1
-    st.session_state.left_side = {i: i if i < N else None for i in range(num_slots)}
-    st.session_state.right_side = {i: None for i in range(num_slots)}
-    st.session_state.free_slot = None
-    st.session_state.game_won = False
-    st.session_state.move_history.clear()
-    st.session_state.move_count = 0
-
-if "left_side" not in st.session_state:
-    initialize_game()
 # --- THEME GENERATION ---
 def get_block_theme(block_idx, num_blocks):
     colors = CONFIG["CRAYOLA_COLORS"]
@@ -458,12 +250,10 @@ def render_block_html(block_idx):
 def render_empty_free_slot():
     return '<div class="block-empty-free">Empty</div>'
 
-# ====================================================================
 # --- USER INTERFACE DESIGN ---
-# ====================================================================
 st.title("Cuby Puzzle 🧩")
 
-# Wrap the controls inside an explicit border container to bypass collapse bugs
+# Wrap the controls inside an explicit layout box
 with st.container(border=True):
     st.write("### ⚙️ Game Configurations")
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 1, 1])
@@ -481,11 +271,13 @@ with st.container(border=True):
             st.rerun()
 
     with col_ctrl2:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         if st.button("🔄 Reset Board", use_container_width=True):
             initialize_game()
             st.rerun()
 
     with col_ctrl3:
+        st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
         has_history = len(st.session_state.move_history) > 0
         if st.button("↶ Undo Move", disabled=not has_history, use_container_width=True):
             undo_move()
