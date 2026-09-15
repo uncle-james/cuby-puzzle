@@ -44,23 +44,37 @@ if "move_history" not in st.session_state:
 if "move_count" not in st.session_state:
     st.session_state.move_count = 0
 
-# --- DYNAMIC GRID SCALING CALCULATOR ---
+# --- DYNAMIC MOBILE-FIRST GRID SCALING ---
+# More aggressive scaling so it fits perfectly on phone screen landscapes without scrolling
 current_n = st.session_state.num_blocks
 if current_n <= 4:
-    computed_height = 42
+    computed_height = 36
 elif current_n <= 7:
-    computed_height = 32
+    computed_height = 28
 else:
-    computed_height = 24
+    computed_height = 20
 
 def inject_styles(block_height):
-    """Inject balanced CSS styles with normal margins to prevent clipping or chopping."""
+    """Inject responsive mobile layout variables to force side-by-side grids on mobile viewports."""
     st.markdown(f"""
         <style>
+        /* Compress the master app padding to save vertical space on phone screens */
         .block-container {{
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }}
+        
+        /* Force row-based side-by-side grid alignment even on portrait mobile screens */
+        .mobile-row-container {{
+            display: grid;
+            grid-template-columns: 3fr 1fr 3fr;
+            gap: 4px;
+            align-items: center;
+            width: 100%;
+        }}
+        
         .puzzle-block {{
             height: {block_height}px;
             display: flex;
@@ -72,7 +86,12 @@ def inject_styles(block_height):
             box-shadow: {CONFIG['SHADOW']};
             margin: {CONFIG['BLOCK_MARGIN']};
             font-family: sans-serif;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }}
+        
         .block-empty {{
             height: {block_height}px;
             border: 1px dashed {CONFIG['COLORS']['border_dashed']};
@@ -80,6 +99,7 @@ def inject_styles(block_height):
             border-radius: {CONFIG['BORDER_RADIUS']};
             margin: {CONFIG['BLOCK_MARGIN']};
         }}
+        
         .block-empty-free {{
             height: {block_height}px;
             border: 1px dashed {CONFIG['COLORS']['border_dashed']};
@@ -92,6 +112,7 @@ def inject_styles(block_height):
             border-radius: {CONFIG['BORDER_RADIUS']};
             margin: {CONFIG['BLOCK_MARGIN']};
         }}
+        
         .slot-label {{
             height: {block_height}px;
             display: flex;
@@ -102,25 +123,36 @@ def inject_styles(block_height):
             font-size: {CONFIG['FONT_SIZE_LABEL']};
             font-family: sans-serif;
         }}
+        
+        .header-row {{
+            display: grid;
+            grid-template-columns: 3fr 1fr 3fr;
+            gap: 4px;
+            text-align: center;
+            margin-bottom: 4px;
+        }}
+        
         .header {{
             font-weight: bold;
             font-size: {CONFIG['FONT_SIZE_BLOCK']};
         }}
-        .header-left {{
-            text-align: center;
-            color: {CONFIG['COLORS']['header_left']};
-        }}
-        .header-right {{
-            text-align: center;
-            color: {CONFIG['COLORS']['header_right']};
-        }}
-        .header-center {{
-            text-align: center;
-            color: {CONFIG['COLORS']['text_secondary']};
-        }}
+        .header-left {{ color: {CONFIG['COLORS']['header_left']}; }}
+        .header-right {{ color: {CONFIG['COLORS']['header_right']}; }}
+        .header-center {{ color: {CONFIG['COLORS']['text_secondary']}; }}
+        
         .action-buttons {{
-            margin-top: 15px !important;
-            margin-bottom: 10px !important;
+            margin-top: 5px !important;
+            margin-bottom: 5px !important;
+        }}
+        
+        /* Drop font sizes slightly on very narrow mobile viewports so text fits inside small blocks */
+        @media (max-width: 600px) {{
+            .puzzle-block {{
+                font-size: 10px !important;
+            }}
+            .slot-label {{
+                font-size: 9px !important;
+            }}
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -246,9 +278,15 @@ def render_block_html(block_idx):
         return '<div class="block-empty"></div>'
     theme = get_block_theme(block_idx, st.session_state.num_blocks)
     txt_color = "black" if theme["dark_text"] else "white"
+    
+    # Render shorthand block layout name for compact mobile displays
+    display_name = theme['name']
+    if len(display_name) > 6:
+        display_name = display_name[:5] + "."
+        
     return f"""
     <div class="puzzle-block" style="background-color:{theme['hex']}; color:{txt_color};">
-        [{block_idx}] {theme['name']}
+        [{block_idx}] {display_name}
     </div>
     """
 
@@ -258,6 +296,7 @@ def render_empty_free_slot():
 # --- USER INTERFACE DESIGN ---
 st.title("Cuby Puzzle 🧩")
 
+# Clean configurations row (Uses raw columns since configs stay manageable stacked)
 st.write("### ⚙️ Game Configurations")
 col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
 
@@ -274,13 +313,13 @@ with col_ctrl1:
         st.rerun()
 
 with col_ctrl2:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     if st.button("🔄 Reset Board", use_container_width=True):
         initialize_game()
         st.rerun()
 
 with col_ctrl3:
-    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     has_history = len(st.session_state.move_history) > 0
     if st.button("↶ Undo Move", disabled=not has_history, use_container_width=True):
         undo_move()
@@ -288,7 +327,7 @@ with col_ctrl3:
 
 # Dynamic exponential difficulty warnings
 if st.session_state.num_blocks >= 8:
-    st.warning(f"💡 High difficulty active! An optimal solution for {st.session_state.num_blocks} blocks requires at least {2**(st.session_state.num_blocks+1) - st.session_state.num_blocks - 2} perfect moves.")
+    st.warning(f"💡 Optimal path requires at least {2**(st.session_state.num_blocks+1) - st.session_state.num_blocks - 2} moves.")
 
 # Display win condition
 if st.session_state.game_won:
@@ -296,10 +335,9 @@ if st.session_state.game_won:
     st.success(f"🎉 Solved for {st.session_state.num_blocks} blocks in {st.session_state.move_count} moves!")
 
 # Display move counter
-st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_secondary']}; font-size:14px; margin-top:15px;'>Moves Executed: <strong>{st.session_state.move_count}</strong></div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color:{CONFIG['COLORS']['text_secondary']}; font-size:13px;'>Moves: <strong>{st.session_state.move_count}</strong></div>", unsafe_allow_html=True)
 
 # --- FUTURE-PROOF KEYBOARD SHORTCUTS INTERCEPTOR ---
-# Fixed: Height set directly to 1 pixel to clear structural framework requirements
 raw_js_content = """
 <!DOCTYPE html>
 <html>
@@ -310,10 +348,10 @@ const doc = window.parent.document;
 doc.parentKeydownListener = doc.parentKeydownListener || function(e) {
     const key = e.key.toLowerCase();
     let btnLabel = "";
-    if (key === 'w') btnLabel = "🔼 Free";
-    if (key === 'd') btnLabel = "➡️ Right";
-    if (key === 'a') btnLabel = "⬅️ Left";
-    if (key === 's') btnLabel = "🔽 Drop";
+    if (key === 'w') btnLabel = "Free";
+    if (key === 'd') btnLabel = "Right";
+    if (key === 'a') btnLabel = "Left";
+    if (key === 's') btnLabel = "Drop";
     
     if (btnLabel) {
         const buttons = Array.from(doc.querySelectorAll('button'));
@@ -333,45 +371,52 @@ b64_js_payload = base64.b64encode(raw_js_content.encode("utf-8")).decode("utf-8"
 st.iframe(src=f"data:text/html;base64,{b64_js_payload}", height=1)
 
 # --- 1. ACTION CONTROLS PANEL ---
-st.markdown(f"<div class='action-buttons'><h6>🎮 Action Controls (Keyboard: W, A, S, D)</h6></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='action-buttons'><h6>🎮 Action Controls (WASD)</h6></div>", unsafe_allow_html=True)
 btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
 with btn_col1:
-    st.button("🔼 Free (W)", on_click=move_left_to_free, use_container_width=True)
+    st.button("🔼 Free", on_click=move_left_to_free, use_container_width=True)
 with btn_col2:
-    st.button("➡️ Right (D)", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True)
+    st.button("➡️ Right", on_click=move_side_to_side, args=("Left", "Right"), use_container_width=True)
 with btn_col3:
-    st.button("⬅️ Left (A)", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True)
+    st.button("⬅️ Left", on_click=move_side_to_side, args=("Right", "Left"), use_container_width=True)
 with btn_col4:
-    st.button("🔽 Drop (S)", on_click=drop_free_to_left, use_container_width=True)
+    st.button("🔽 Drop", on_click=drop_free_to_left, use_container_width=True)
 
 # --- 2. FREE SLOT DISPLAY ---
-st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold; margin-top:15px;'>FREE SLOT</div>", unsafe_allow_html=True)
-_, f_mid, _ = st.columns(3)
+st.markdown(f"<div style='text-align: center; font-size:{CONFIG['FONT_SIZE_LABEL']}; color:{CONFIG['COLORS']['text_secondary']}; font-weight:bold; margin-top:5px;'>FREE SLOT</div>", unsafe_allow_html=True)
+_, f_mid, _ = st.columns([1, 2, 1])
 with f_mid:
     if st.session_state.free_slot is not None:
         st.markdown(render_block_html(st.session_state.free_slot), unsafe_allow_html=True)
     else:
         st.markdown(render_empty_free_slot(), unsafe_allow_html=True)
 
-# --- 3. UNIFIED GAME BOARD GRID ---
+# --- 3. UNIFIED GAME BOARD GRID (FORCED CSS GRID ROW-BY-ROW) ---
 num_slots = st.session_state.num_blocks + 1
 
-# Column headers
-hdr_l, hdr_m, hdr_r = st.columns(3)
-hdr_l.markdown(f"<div class='header header-left'>LEFT</div>", unsafe_allow_html=True)
-hdr_m.markdown(f"<div class='header header-center'>SLOT</div>", unsafe_allow_html=True)
-hdr_r.markdown(f"<div class='header header-right'>RIGHT</div>", unsafe_allow_html=True)
+# Render Column Headers locked side-by-side using the injected layout wrapper
+st.markdown(f"""
+<div class="header-row">
+    <div class="header header-left">LEFT</div>
+    <div class="header header-center">SLOT</div>
+    <div class="header header-right">RIGHT</div>
+</div>
+""", unsafe_allow_html=True)
 
-# Render compact side-by-side rows
+# Render compact row structures locked into horizontal CSS grids
 for s_idx in range(num_slots - 1, -1, -1):
-    col_l, col_m, col_r = st.columns(3)
-    with col_l:
-        st.markdown(render_block_html(st.session_state.left_side[s_idx]), unsafe_allow_html=True)
-    with col_m:
-        st.markdown(f"<div class='slot-label'>#{s_idx}</div>", unsafe_allow_html=True)
-    with col_r:
-        st.markdown(render_block_html(st.session_state.right_side[s_idx]), unsafe_allow_html=True)
+    left_html = render_block_html(st.session_state.left_side[s_idx])
+    middle_html = f"<div class='slot-label'>#{s_idx}</div>"
+    right_html = render_block_html(st.session_state.right_side[s_idx])
+    
+    st.markdown(f"""
+    <div class="mobile-row-container">
+        <div>{left_html}</div>
+        <div>{middle_html}</div>
+        <div>{right_html}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- VISUAL CONFIRMATION CANARY ANCHOR ---
-st.markdown("<hr style='border:1px solid #1E293B; margin-top: 50px;'>", unsafe_allow_html=True)
-st.info("🎯 BUILD RUNNING CLEAN: Framework constraint parameters satisfied successfully!")
+st.markdown("<hr style='border:1px solid #1E293B; margin-top: 20px;'>", unsafe_allow_html=True)
+st.info("📱 MOBILE OPTIMIZED BUILD: Horizontal alignment locked across viewports!")
