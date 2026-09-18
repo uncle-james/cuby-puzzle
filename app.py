@@ -159,6 +159,30 @@ def inject_styles(block_height):
 
 inject_styles(computed_height)
 
+import math
+
+def M_exact(n):
+    """Integer-exact optimal move count. This is what we actually use."""
+    base = {1: 1, 2: 4, 3: 11, 4: 30}
+    if n in base:
+        return base[n]
+    prev, curr = 30, 71
+    for i in range(6, n + 1):
+        prev, curr = curr, 2*curr + prev + (4 if i % 2 == 0 else 0)
+    return curr
+
+def M_closed(n):
+    """Closed form. Beautiful, correct for n >= 4, mildly haunted by floats."""
+    if n <= 3:
+        return {1: 1, 2: 4, 3: 11}[n]
+    s2 = math.sqrt(2)
+    a = -3 + 11*s2/4
+    b = -3 - 11*s2/4
+    return round(a*(1+s2)**n + b*(1-s2)**n + (-1)**n - 1)
+
+def optimal_moves(n):
+    return M_exact(n)
+
 def initialize_game():
     N = st.session_state.num_blocks
     num_slots = N + 1
@@ -326,8 +350,15 @@ with col_ctrl3:
         st.rerun()
 
 # Dynamic exponential difficulty warnings
+#if st.session_state.num_blocks >= 8:
+#    st.warning(f"💡 Optimal path requires at least {2**(st.session_state.num_blocks+1) - #st.session_state.num_blocks - 2} moves.")
 if st.session_state.num_blocks >= 8:
-    st.warning(f"💡 Optimal path requires at least {2**(st.session_state.num_blocks+1) - st.session_state.num_blocks - 2} moves.")
+    n = st.session_state.num_blocks
+    st.warning(
+        f"💡 Optimal path requires at least **{optimal_moves(n)}** moves.\n\n"
+        f"*(Silver-ratio growth: "
+        f"M(n) = (−3 + 11√2/4)(1+√2)ⁿ + (−3 − 11√2/4)(1−√2)ⁿ + (−1)ⁿ − 1)*"
+    )
 
 # Display win condition
 if st.session_state.game_won:
